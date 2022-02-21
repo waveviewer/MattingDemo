@@ -1,7 +1,5 @@
 import time
 from multiprocessing import Process
-
-import numpy
 import numpy as np
 import torch
 from torchvision.transforms import ToTensor
