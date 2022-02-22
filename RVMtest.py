@@ -6,26 +6,30 @@ from torchvision.transforms import ToTensor
 from inference_utils import VideoReader, VideoWriter
 import cv2
 
+
+def prepare_model():
+    device = torch.device('cuda')
+    model = torch.jit.load('model/rvm_mobilenetv3_fp32.torchscript')
+    model = model.to(device)
+    model = torch.jit.freeze(model)
+    return model
+
+
 def cv2_frame_to_cuda(frame):
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     return ToTensor()(Image.fromarray(frame)).unsqueeze_(0).cuda()
 
 
 if __name__ == '__main__':
-    device = torch.device('cuda')
-    model = torch.jit.load('model/rvm_mobilenetv3_fp32.torchscript')
-    precision = torch.float32
-    model = model.to(device)
-    model = torch.jit.freeze(model)
-    reader = VideoReader("/home/wave/Videos/dy1.mp4", transform=ToTensor())
-    writer = VideoWriter('test_result/mobilev3_dance2.flv', frame_rate=30)
-    bgr = torch.tensor([.47, 1, .6]).view(3, 1, 1).to(precision).cuda()  # 绿背景
+    reader1 = VideoReader("/home/wave/Videos/dy1.mp4", transform=ToTensor())
+    writer1 = VideoWriter('test_result/mobilev3_dance2.flv', frame_rate=30)
+    bgr = torch.tensor([.47, 1, .6]).view(3, 1, 1).to(torch.float32).cuda()  # 绿背景
     rec = [None] * 4  # 初始循环记忆（Recurrent States）
     downsample_ratio = 0.25  # 下采样比，根据视频调节
-    cv2.namedWindow("show", cv2.WINDOW_NORMAL)
     camera = cv2.VideoCapture("/home/wave/Videos/dy1.mp4")
-    start = time.perf_counter()
+
     with torch.no_grad():
+        start = time.perf_counter()
         loop_cnt = 0
         while True:
             flag, src = camera.read()
